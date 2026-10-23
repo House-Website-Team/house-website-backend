@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { UserController } from "../controllers/user.controller";
 import { check } from "express-validator";
+import { userRepo } from "../../database/database";
 
 const router = Router();
 const userController = new UserController();
@@ -21,6 +22,13 @@ export const userRouter = router
         min: 4,
       }),
       check("email", "Почта не может быть пуста!").notEmpty(),
+      check("email", "Такая почта уже используется!").custom(async (email) => {
+        if (await userRepo.existsBy({ email: email })) {
+          throw new Error("Такая почта уже используется!");
+        }
+
+        return true;
+      }),
     ],
     userController.createUser,
   )

@@ -1,16 +1,27 @@
 import { validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
+import jwt from "jsonwebtoken";
+import { Request, Response } from "express";
 
 import { userRepo } from "../../database/database";
 import { Users } from "../../database/entitites/user.entity";
-import { Request, Response } from "express";
+
+const generateAccessToken = (name: string) => {
+  const payload = {
+    name,
+  };
+
+  return jwt.sign(payload, String(process.env.SECRET_TOKEN), {
+    expiresIn: "6h",
+  });
+};
 
 export class UserController {
   getUserParam = async (req: Request, res: Response) => {
     try {
       const userInfo = await userRepo.findBy({ id: Number(req.params.id) });
 
-      if (JSON.stringify(userInfo) == "[]") {
+      if (userInfo.length == 0) {
         return res
           .status(404)
           .json({ responce: "Такой пользователь не найден!" });
@@ -29,7 +40,7 @@ export class UserController {
     try {
       const userInfo = await userRepo.findBy({ id: Number(req.query.id) });
 
-      if (JSON.stringify(userInfo) == "[]") {
+      if (userInfo.length == 0) {
         return res
           .status(404)
           .json({ responce: "Такой пользователь не найден!" });
@@ -63,6 +74,7 @@ export class UserController {
         Number(process.env.PASSWORD_SALT),
       );
       const user = new Users();
+      const token = generateAccessToken(name);
 
       if (!validationsErrors.isEmpty()) {
         return res.status(404).json({
@@ -79,6 +91,7 @@ export class UserController {
 
       res.json({
         responce: "Пользователь успешно добавлен!",
+        token: token,
       });
     } catch (e) {
       console.error("Произошла ошибка создания пользователя!", e);
@@ -90,7 +103,7 @@ export class UserController {
       const userId = Number(req.params.id);
       const userInfo = await userRepo.findBy({ id: userId });
 
-      if (JSON.stringify(userInfo) == "[]") {
+      if (userInfo.length == 0) {
         return res
           .status(404)
           .json({ responce: "Такой пользователь не найден!" });
@@ -109,7 +122,7 @@ export class UserController {
       const userId = Number(req.query.id);
       const userInfo = await userRepo.findBy({ id: userId });
 
-      if (JSON.stringify(userInfo) == "[]") {
+      if (userInfo.length == 0) {
         return res
           .status(404)
           .json({ responce: "Такой пользователь не найден!" });
@@ -140,7 +153,7 @@ export class UserController {
         });
       }
 
-      if (JSON.stringify(userInfo) == "[]") {
+      if (userInfo.length == 0) {
         return res
           .status(404)
           .json({ responce: "Такой пользователь не найден!" });
@@ -162,126 +175,3 @@ export class UserController {
     }
   };
 }
-
-/*
-export const userRouter = router
-  .get("/user/:id", async (req, res) => {
-    const userId = Number(req.params.id);
-    const userInfo = await userRepo.findBy({ id: userId });
-
-    if (JSON.stringify(userInfo) == "[]") {
-      return res
-        .status(404)
-        .json({ responce: "Такой пользователь не найден!" });
-    }
-
-    res.json(userInfo);
-  })
-
-  .get("/user", async (req, res) => {
-    const userId = Number(req.query.id);
-    const userInfo = await userRepo.findBy({ id: userId });
-
-    if (JSON.stringify(userInfo) == "[]") {
-      return res
-        .status(404)
-        .json({ responce: "Такой пользователь не найден!" });
-    }
-
-    res.json(userInfo);
-  })
-
-  .post("/user", async (req, res) => {
-    const { name, password, email } = req.body;
-    const hashPassword = await bcrypt.hash(
-      password,
-      Number(process.env.PASSWORD_SALT),
-    );
-    const person = new users();
-
-    person.name = name;
-    person.password = String(hashPassword);
-    person.email = email;
-
-    body(name).notEmpty().withMessage("Имя пользователя не может быть пустым!");
-
-    const validationsErrors = await validationResult(req);
-
-    if (!validationsErrors.isEmpty()) {
-      return res
-        .status(404)
-        .json({ responce: "Произошла ошибка", validationsErrors });
-    }
-
-    await userRepo.save(person);
-
-    res.json({
-      responce: "Пользователь успешно добавлен!",
-    });
-  })
-
-  .delete("/user/:id", async (req, res) => {
-    const userId = Number(req.params.id);
-    const userInfo = await userRepo.findBy({ id: userId });
-
-    if (JSON.stringify(userInfo) == "[]") {
-      return res
-        .status(404)
-        .json({ responce: "Такой пользователь не найден!" });
-    }
-
-    await userRepo.delete({ id: userId });
-
-    res.json({ response: "Пользователь успешно удален!" });
-  })
-
-  .delete("/user", async (req, res) => {
-    const userId = Number(req.query.id);
-    const userInfo = await userRepo.findBy({ id: userId });
-
-    if (JSON.stringify(userInfo) == "[]") {
-      return res
-        .status(404)
-        .json({ responce: "Такой пользователь не найден!" });
-    }
-
-    await userRepo.delete({ id: userId });
-
-    res.json({ response: "Пользователь успешно удален!" });
-  })
-
-  .patch("/user", async (req, res) => {
-    const { userId, whatPatch, value } = req.body;
-    const userInfo = await userRepo.findBy({ id: userId });
-    const typesPatch = ["name", "password", "email"];
-    const hashPassword = await bcrypt.hash(
-      value,
-      Number(process.env.PASSWORD_SALT),
-    );
-
-    if (JSON.stringify(userInfo) == "[]") {
-      return res
-        .status(404)
-        .json({ responce: "Такой пользователь не найден!" });
-    }
-
-    if (!typesPatch.includes(whatPatch)) {
-      return res.status(404).json({ response: "Такое поле не действительно!" });
-    }
-
-    await userRepo.update(
-      { id: userId },
-      { [whatPatch]: whatPatch == "password" ? hashPassword : value },
-    );
-
-    res.json({
-      responce: `Поле ${whatPatch} в id ${userId} успешно измененно!`,
-    });
-  })
-
-  .get("/users", async (req, res) => {
-    res.json({
-      response: await userRepo.find(),
-    });
-  });
-*/

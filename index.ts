@@ -5,6 +5,7 @@ import { database } from "./server/database/database";
 
 // -- Imports Routes
 import { userRouter } from "./server/modules/routes/user.route";
+import { authRouter } from "./server/modules/routes/auth.route";
 
 const app = express();
 const port = process.env.PORT || 5000;
@@ -20,5 +21,6 @@ try {
 // -- Use
 app.use(express.json());
 app.use(userRouter);
+app.use(authRouter);
 
 app.listen(port);
