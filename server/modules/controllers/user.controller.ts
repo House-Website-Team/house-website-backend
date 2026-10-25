@@ -1,71 +1,99 @@
 import { validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
-import jwt from "jsonwebtoken";
 import { Request, Response } from "express";
 
 import { userRepo } from "../../database/database";
 import { Users } from "../../database/entitites/user.entity";
 
-const generateAccessToken = (name: string) => {
-  const payload = {
-    name,
-  };
-
-  return jwt.sign(payload, String(process.env.SECRET_TOKEN), {
-    expiresIn: "6h",
-  });
-};
-
 export class UserController {
-  getUserParam = async (req: Request, res: Response) => {
+  getUserParam = async (userId: number) => {
     try {
-      const userInfo = await userRepo.findBy({ id: Number(req.params.id) });
+      const users = await userRepo.findBy({ id: userId });
 
-      if (userInfo.length == 0) {
-        return res
-          .status(404)
-          .json({ responce: "Такой пользователь не найден!" });
+      if (users.length == 0) {
+        return {
+          status: false,
+          message: "Такой пользователь не найден!",
+        };
       }
 
-      res.json(userInfo);
+      const userInfo = users[0];
+
+      return {
+        status: true,
+        user: userInfo,
+      };
     } catch (e) {
       console.error(
         "Произошла ошибка при получении конкретного пользователя",
         e,
       );
+
+      return {
+        status: false,
+        message: "Произошла ошибка при получении конкретного пользователя",
+      };
     }
   };
 
-  getUserQuery = async (req: Request, res: Response) => {
+  getUserQuery = async (userId: number) => {
     try {
-      const userInfo = await userRepo.findBy({ id: Number(req.query.id) });
+      const users = await userRepo.findBy({ id: userId });
 
-      if (userInfo.length == 0) {
-        return res
-          .status(404)
-          .json({ responce: "Такой пользователь не найден!" });
+      if (users.length == 0) {
+        return {
+          status: false,
+          message: "Такой пользователь не найден!",
+        };
       }
 
-      res.json(userInfo);
+      const userInfo = users[0];
+
+      return {
+        status: true,
+        user: userInfo,
+      };
     } catch (e) {
       console.error(
         "Произошла ошибка при получении конкретного пользователя",
         e,
       );
+
+      return {
+        status: false,
+        message: "Произошла ошибка при получении конкретного пользователя",
+      };
     }
   };
 
-  getUsers = async (req: Request, res: Response) => {
+  getUsers = async () => {
     try {
-      res.json({
-        response: await userRepo.find(),
+      const usersInfo = await userRepo.find({
+        select: { name: true, email: true },
       });
+
+      if (usersInfo.length == 0) {
+        return {
+          status: false,
+          message: "Пользователей в базе данных не найдено!",
+        };
+      }
+
+      return {
+        status: true,
+        users: usersInfo,
+      };
     } catch (e) {
       console.error("Произошла ошибка при получении всех пользователей", e);
+
+      return {
+        status: false,
+        message: "Произошла ошибка при получении всех пользователей",
+      };
     }
   };
 
-  createUser = async (req: Request, res: Response) => {
+  createUser = async (req: Request) => {
     try {
       const validationsErrors = validationResult(req);
       const { name, password, email } = req.body;
@@ -74,13 +102,13 @@ export class UserController {
         Number(process.env.PASSWORD_SALT),
       );
       const user = new Users();
-      const token = generateAccessToken(name);
 
       if (!validationsErrors.isEmpty()) {
-        return res.status(404).json({
-          responce: "Произошла ошибка при проверке валидации!",
+        return {
+          status: false,
+          message: "Произошла ошибка при проверке валидации!",
           validationsErrors,
-        });
+        };
       }
 
       user.name = name;
@@ -89,54 +117,75 @@ export class UserController {
 
       await userRepo.save(user);
 
-      res.json({
-        responce: "Пользователь успешно добавлен!",
-        token: token,
-      });
+      return {
+        status: true,
+        message: "Пользователь успешно добавлен!",
+      };
     } catch (e) {
       console.error("Произошла ошибка создания пользователя!", e);
+
+      return {
+        status: false,
+        message: "Произошла ошибка при получении всех пользователей",
+      };
     }
   };
 
-  deleteUserParams = async (req: Request, res: Response) => {
+  deleteUserParams = async (userId: number) => {
     try {
-      const userId = Number(req.params.id);
       const userInfo = await userRepo.findBy({ id: userId });
 
       if (userInfo.length == 0) {
-        return res
-          .status(404)
-          .json({ responce: "Такой пользователь не найден!" });
+        return {
+          status: false,
+          message: "Такой пользователь не найден!",
+        };
       }
 
       await userRepo.delete({ id: userId });
 
-      res.json({ response: "Пользователь успешно удален!" });
+      return {
+        status: true,
+        message: "Пользователь успешно удален!",
+      };
     } catch (e) {
       console.error("Произошла ошибка при удалении пользователя!", e);
+
+      return {
+        status: false,
+        message: "Произошла ошибка при удалении пользователя!",
+      };
     }
   };
 
-  deleteUserQuery = async (req: Request, res: Response) => {
+  deleteUserQuery = async (userId: number) => {
     try {
-      const userId = Number(req.query.id);
       const userInfo = await userRepo.findBy({ id: userId });
 
       if (userInfo.length == 0) {
-        return res
-          .status(404)
-          .json({ responce: "Такой пользователь не найден!" });
+        return {
+          status: false,
+          message: "Такой пользователь не найден!",
+        };
       }
 
       await userRepo.delete({ id: userId });
 
-      res.json({ response: "Пользователь успешно удален!" });
+      return {
+        status: true,
+        message: "Пользователь успешно удален!",
+      };
     } catch (e) {
       console.error("Произошла ошибка при удалении пользователя!", e);
+
+      return {
+        status: false,
+        message: "Произошла ошибка при удалении пользователя!",
+      };
     }
   };
 
-  patchUser = async (req: Request, res: Response) => {
+  patchUser = async (req: Request) => {
     try {
       const validationsErrors = validationResult(req);
       const { userId, whatPatch, value } = req.body;
@@ -147,16 +196,18 @@ export class UserController {
       );
 
       if (!validationsErrors.isEmpty()) {
-        return res.status(404).json({
-          responce: "Произошла ошибка при проверке валидации!",
+        return {
+          status: false,
+          message: "Произошла ошибка при проверке валидации!",
           validationsErrors,
-        });
+        };
       }
 
       if (userInfo.length == 0) {
-        return res
-          .status(404)
-          .json({ responce: "Такой пользователь не найден!" });
+        return {
+          status: false,
+          message: "Такой пользователь не найден!",
+        };
       }
 
       await userRepo.update(
@@ -164,14 +215,20 @@ export class UserController {
         { [whatPatch]: whatPatch == "password" ? hashPassword : value },
       );
 
-      res.json({
-        responce: `Поле ${whatPatch} в id ${userId} успешно измененно!`,
-      });
+      return {
+        status: true,
+        message: `Поле ${whatPatch} в id ${userId} успешно измененно!`,
+      };
     } catch (e) {
       console.error(
         "Произошла ошибка при изменении параметра пользователя!",
         e,
       );
+
+      return {
+        status: false,
+        message: "Произошла ошибка при изменении параметра пользователя!",
+      };
     }
   };
 }
