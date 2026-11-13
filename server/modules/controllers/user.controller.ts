@@ -93,23 +93,13 @@ export class UserController {
     }
   };
 
-  createUser = async (req: Request) => {
+  createUser = async (name: string, password: string, email: string) => {
     try {
-      const validationsErrors = validationResult(req);
-      const { name, password, email } = req.body;
       const hashPassword = await bcrypt.hash(
         password,
         Number(process.env.PASSWORD_SALT),
       );
       const user = new Users();
-
-      if (!validationsErrors.isEmpty()) {
-        return {
-          status: false,
-          message: "Произошла ошибка при проверке валидации!",
-          validationsErrors,
-        };
-      }
 
       user.name = name;
       user.password = String(hashPassword);
@@ -185,23 +175,13 @@ export class UserController {
     }
   };
 
-  patchUser = async (req: Request) => {
+  patchUser = async (userId: number, whatPatch: string, value: string) => {
     try {
-      const validationsErrors = validationResult(req);
-      const { userId, whatPatch, value } = req.body;
       const userInfo = await userRepo.findBy({ id: userId });
       const hashPassword: string = await bcrypt.hash(
         value,
         Number(process.env.PASSWORD_SALT),
       );
-
-      if (!validationsErrors.isEmpty()) {
-        return {
-          status: false,
-          message: "Произошла ошибка при проверке валидации!",
-          validationsErrors,
-        };
-      }
 
       if (userInfo.length == 0) {
         return {

@@ -17,7 +17,12 @@ const generateAccessToken = (name: string) => {
 export class AuthController {
   reg = (req: Request, res: Response) => {
     const token = generateAccessToken(req.body.name);
+    const { name, password, email } = req.body;
 
-    user.createUser(req, res);
+    user.createUser(name, password, email);
+
+    return {
+      token: token
+    }
   };
 }

@@ -3,6 +3,7 @@ import { UserController } from "../controllers/user.controller";
 import { check } from "express-validator";
 import { userRepo } from "../../database/database";
 import { Request, Response } from "express";
+import { validationResult } from "express-validator";
 
 const router = Router();
 const userController = new UserController();
@@ -67,21 +68,29 @@ export const userRouter = router
       check("email", "Почта не может быть пуста!").notEmpty(),
       check("email", "Такая почта уже используется!").custom(async (email) => {
         if (await userRepo.existsBy({ email: email })) {
-          throw new Error("Такая почта уже используется!");
+          throw new Error("EmailNotExists");
         }
 
         return true;
       }),
     ],
     async (req: Request, res: Response) => {
-      const result = await userController.createUser(req);
+      const { name, password, email } = req.body;
+      const validationsErrors = await validationResult(req);
+
+      if (!validationsErrors.isEmpty()) {
+        return res.status(404).json({
+          message: "Произошла ошибка при проверке валидации!",
+          validation: validationsErrors ? validationsErrors : false,
+        });
+      }
+
+      const result = await userController.createUser(name, password, email);
 
       if (!result.status) {
         return res.status(404).json({
           message: result.message,
-          validation: result.validationsErrors
-            ? result.validationsErrors
-            : false,
+          validation: validationsErrors ? validationsErrors : false,
         });
       }
 
@@ -131,19 +140,31 @@ export const userRouter = router
         "value",
         "Поле с значением изменения не может быть пустым!",
       ).notEmpty(),
-      check("whatPatch")
     ],
     async (req: Request, res: Response) => {
-      const result = await userController.patchUser(req);
+      const { userId, whatPatch, value } = req.body;
+      const validationsErrors = validationResult(req);
+
+      if (!validationsErrors.isEmpty()) {
+        return res.status(400).json({
+          status: false,
+          message: "Произошла ошибка при проверке валидации!",
+          validationsErrors,
+        });
+      }
+
+      const result = await userController.patchUser(userId, whatPatch, value);
 
       if (!result.status) {
         return res.status(404).json({
           message: result.message,
-          validation: result.validationsErrors
-            ? result.validationsErrors
+          validation: validationsErrors
+            ? validationsErrors
             : false,
         });
       }
+
+      console.log(validationsErrors);
 
       res.json({
         message: result.message,
