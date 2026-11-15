@@ -15,8 +15,8 @@
 - POST
 ```
 {
-  "name":""
-  "password":""
+  "name":"",
+  "password":"",
   "email":""
 }
 ```
@@ -24,8 +24,8 @@
 - PATCH
 ```
 {
-  "userId": ""
-  "whatPatch": ""
+  "userId": "",
+  "whatPatch": "",
   "value": ""
 }
 ```
