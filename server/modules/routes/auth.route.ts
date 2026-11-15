@@ -6,7 +6,8 @@ const router = Router();
 const authController = new AuthController();
 
 export const authRouter = router.post("/reg", (req: Request, res: Response) => {
-  const result = authController.reg(req, res);
+  const { name, password, email } = req.body;
+  const result = authController.reg(name, password, email);
 
   res.json(result);
 });
