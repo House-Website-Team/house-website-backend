@@ -1,6 +1,4 @@
-import { validationResult } from "express-validator";
 import bcrypt from "bcryptjs";
-import { Request, Response } from "express";
 
 import { userRepo } from "../../database/database";
 import { Users } from "../../database/entitites/user.entity";

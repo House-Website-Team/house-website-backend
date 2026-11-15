@@ -2,6 +2,7 @@
 import express from "express";
 import "dotenv/config";
 import { database } from "./server/database/database";
+import cors from "cors";
 
 // -- Imports Routes
 import { userRouter } from "./server/modules/routes/user.route";
@@ -19,6 +20,7 @@ try {
 }
 
 // -- Use
+app.use(cors());
 app.use(express.json());
 app.use(userRouter);
 app.use(authRouter);

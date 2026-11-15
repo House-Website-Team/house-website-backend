@@ -1,4 +1,3 @@
-import { Request, Response } from "express";
 import { UserController } from "./user.controller";
 import jwt from "jsonwebtoken";
 
